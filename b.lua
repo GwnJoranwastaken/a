@@ -32,9 +32,7 @@ local Commands = {}
 local Settings = {
     Prefix = "?"
 }
-local Ranked = {
-    66184976
-}
+local Ranked = {}
 local LoopKilled = {}
 
 -- // Command Functions \\ --
