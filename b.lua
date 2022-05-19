@@ -94,7 +94,12 @@ end
 
 -- // Prison life functions \\ --
 local function Refresh(Position, test)
-    local oldCFrame = Position or LocalPlayer.Character.HumanoidRootPart.CFrame or CFrame.new(918, 100, 2382)
+    local oldCFrame
+    if not Position and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        oldCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+    else
+        oldCFrame = Position or CFrame.new(918, 100, 2382)
+    end
     local oldCam = Workspace.CurrentCamera.CFrame
     if not test then
         task.spawn(InvokeServer, Workspace.Remote.loadchar, LocalPlayer.Name, Color3.fromRGB(0, 100, 255))
@@ -687,8 +692,6 @@ PlayerChatted:Connect(function(Player, Message)
     end
 end)
 
-local Lastpos = CFrame.new(0,0,0)
-local Lastcam = CFrame.new(0,0,0)
 task.spawn(function()
     while task.wait() do
         pcall(function()
@@ -697,6 +700,10 @@ task.spawn(function()
         end)
     end
 end)
+
+--[[local LastPos = LocalPlayer.Character.HumanoidRootPart.CFrame
+local LastCam = Workspace.CurrentCamera.CFrame
+task.spawn(function() while true do LastPos = LocalPlayer.Character.HumanoidRootPart.CFrame LastCam = Workspace.CurrentCamera.CFrame task.wait() end end)]]
 
 LocalPlayer.CharacterAdded:Connect(function(Char)
     local HRP = Char:WaitForChild("HumanoidRootPart")
@@ -716,9 +723,13 @@ LocalPlayer.CharacterAdded:Connect(function(Char)
     Workspace.CurrentCamera.Changed:Wait()
     Workspace.CurrentCamera.CFrame = Lastcam]]
 
-    if HRP.CFrame.Y <= -100 then
-        HRP.CFrame = Lastpos
-    end
+    --[[if HRP.CFrame.Y <= -100 then
+        HRP.CFrame = LastPos
+        Workspace.CurrentCamera.CFrame = LastCam
+        Workspace.CurrentCamera.Changed:Wait()
+        Workspace.CurrentCamera.CFrame = LastCam
+        print("a")
+    end]]
 end)
 
 task.spawn(function()
