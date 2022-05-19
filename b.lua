@@ -17,6 +17,8 @@ local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/BoredStuf
 local PlayerChatted = Signal.new()
 
 local LocalPlayer = Players.LocalPlayer
+local CmdBar
+local CommandList
 
 local DummyRemote, DummyRemoteFunc = Instance.new("RemoteEvent"), Instance.new("RemoteFunction")
 local FireServer = DummyRemote.FireServer
@@ -197,6 +199,8 @@ AddCommand({
     Callback = function(Args, Speaker)
         if Speaker ~= LocalPlayer then
             ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..Speaker.Name.." [Prisonware]: guns, kill, loopkill, unloopkill, bring, arrest, goto/to prison, yard, base, guardroom", "all")
+        else 
+            CommandList.Visible = not CommandList.Visible
         end
     end
 })
@@ -280,7 +284,7 @@ AddCommand({
 })
 AddCommand({
     Name = "rank",
-    Help = "rank/admin [Player]",
+    Help = "rank/admin [player]",
     Description = "Ranks the Player(s)",
     Alias = {"admin"},
     Callback = function(Args, Speaker)
@@ -294,7 +298,7 @@ AddCommand({
 })
 AddCommand({
     Name = "unrank",
-    Help = "unrank/unadmin [Player]",
+    Help = "unrank/unadmin [player]",
     Description = "Unranks the Player(s)",
     Alias = {"unadmin"},
     Callback = function(Args, Speaker)
@@ -312,7 +316,7 @@ AddCommand({
 })
 AddCommand({
     Name = "kill",
-    Help = "kill [Player]",
+    Help = "kill [player]",
     Description = "Kills the Player(s)",
     Alias = {},
     Callback = function(Args, Speaker)
@@ -322,17 +326,19 @@ AddCommand({
 })
 AddCommand({
     Name = "arrest",
-    Help = "arrest [Player]",
+    Help = "arrest [player]",
     Description = "Arrests the player",
     Alias = {},
     Callback = function(Args, Speaker)
         local Targets = GetPlayers(Args[1], Speaker)
+        local oldCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
         Arrest(Targets)
+        Refresh(oldCFrame)
     end
 })
 AddCommand({
     Name = "loopkill",
-    Help = "loopkill/lk [Player]",
+    Help = "loopkill/lk [player]",
     Description = "Loopkills the Player(s)",
     Alias = {"lk"},
     Callback = function(Args, Speaker)
@@ -345,7 +351,7 @@ AddCommand({
 })
 AddCommand({
     Name = "unloopkill",
-    Help = "unloopkill/unlk [Player]",
+    Help = "unloopkill/unlk [player]",
     Description = "Unloopkills the Player(s)",
     Alias = {"unlk"},
     Callback = function(Args, Speaker)
@@ -362,7 +368,7 @@ AddCommand({
 })
 AddCommand({
     Name = "bring",
-    Help = "bring [Player]",
+    Help = "bring [player]",
     Description = "brings the Players(s)",
     Alias = {},
     Callback = function(Args, Speaker)
@@ -387,7 +393,7 @@ AddCommand({
 })
 AddCommand({
     Name = "to",
-    Help = "to/goto [Player]",
+    Help = "to/goto [player]",
     Description = "Goto the Players(s)",
     Alias = {"goto"},
     Callback = function(Args, Speaker)
@@ -501,46 +507,73 @@ AddCommand({
 
 local GUI = loadstring([[
     local Gui = Instance.new("ScreenGui")
-    local Commandbar = Instance.new("TextBox")
-    local Arrow = Instance.new("TextLabel")
+    local CommandList = Instance.new("Frame")
+    local Label = Instance.new("TextLabel")
+    local Commands = Instance.new("ScrollingFrame")
+    local List = Instance.new("UIListLayout")
+    local Close = Instance.new("TextButton")
     local DropShadow = Instance.new("ImageLabel")
-
+    local CmdLabel = Instance.new("TextLabel")
+    local CommandBar = Instance.new("Frame")
+    local Arrow = Instance.new("TextLabel")
+    local Input = Instance.new("TextBox")
+    local DropShadow_2 = Instance.new("ImageLabel")
+    
     Gui.Name = "Gui"
     Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    Commandbar.Name = "Commandbar"
-    Commandbar.Parent = Gui
-    Commandbar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Commandbar.BackgroundTransparency = 0.500
-    Commandbar.BorderSizePixel = 0
-    Commandbar.Position = UDim2.new(0.0709219873, 0, 0.900481522, 0)
-    Commandbar.Size = UDim2.new(0.899999976, 0, 0, 50)
-    Commandbar.Font = Enum.Font.SourceSans
-    Commandbar.Text = ""
-    Commandbar.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Commandbar.TextSize = 20
-    Commandbar.TextXAlignment = Enum.TextXAlignment.Left
-
-    Arrow.Name = "Arrow"
-    Arrow.Parent = Commandbar
-    Arrow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Arrow.BackgroundTransparency = 0.500
-    Arrow.BorderSizePixel = 0
-    Arrow.Position = UDim2.new(-0.0335, 0, 0, 0)
-    Arrow.Size = UDim2.new(0, 46, 0, 50)
-    Arrow.Font = Enum.Font.SourceSans
-    Arrow.Text = ">"
-    Arrow.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Arrow.TextScaled = true
-    Arrow.TextSize = 14.000
-    Arrow.TextWrapped = true
-
+    
+    CommandList.Name = "CommandList"
+    CommandList.Parent = Gui
+    CommandList.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    CommandList.BackgroundTransparency = 0.500
+    CommandList.Position = UDim2.new(0.023504287, 0, 0.338683784, 0)
+    CommandList.Size = UDim2.new(0, 175, 0, 200)
+    
+    Label.Name = "Label"
+    Label.Parent = CommandList
+    Label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Label.BackgroundTransparency = 1.000
+    Label.BorderColor3 = Color3.fromRGB(27, 42, 53)
+    Label.BorderSizePixel = 0
+    Label.Size = UDim2.new(0, 175, 0, 30)
+    Label.Font = Enum.Font.SourceSans
+    Label.Text = "Commands"
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextSize = 18.000
+    Label.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextWrapped = true
+    
+    Commands.Name = "Commands"
+    Commands.Parent = CommandList
+    Commands.Active = true
+    Commands.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Commands.BackgroundTransparency = 0.750
+    Commands.BorderSizePixel = 0
+    Commands.Position = UDim2.new(0.0285713673, 0, 0.149999991, 0)
+    Commands.Size = UDim2.new(0, 165, 0, 165)
+    Commands.ScrollBarThickness = 0
+    
+    List.Name = "List"
+    List.Parent = Commands
+    List.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    Close.Name = "Close"
+    Close.Parent = CommandList
+    Close.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Close.BackgroundTransparency = 1.000
+    Close.Position = UDim2.new(0.828571439, 0, 0, 0)
+    Close.Size = UDim2.new(0, 30, 0, 30)
+    Close.Font = Enum.Font.SourceSans
+    Close.Text = "X"
+    Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Close.TextSize = 14.000
+    
     DropShadow.Name = "DropShadow"
-    DropShadow.Parent = Commandbar
+    DropShadow.Parent = CommandList
     DropShadow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     DropShadow.BackgroundTransparency = 1.000
-    DropShadow.Position = UDim2.new(0, -51, 0, -5)
-    DropShadow.Size = UDim2.new(1.05299997, 9, 1, 10)
+    DropShadow.Position = UDim2.new(0, -5, 0, -5)
+    DropShadow.Size = UDim2.new(1, 10, 1, 10)
     DropShadow.ZIndex = -5
     DropShadow.Image = "rbxassetid://297694300"
     DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
@@ -548,12 +581,75 @@ local GUI = loadstring([[
     DropShadow.ScaleType = Enum.ScaleType.Slice
     DropShadow.SliceCenter = Rect.new(95, 103, 894, 902)
     DropShadow.SliceScale = 0.050
+    
+    CmdLabel.Name = "CmdLabel"
+    CmdLabel.Parent = Gui
+    CmdLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    CmdLabel.BackgroundTransparency = 1.000
+    CmdLabel.Size = UDim2.new(0, 175, 0, 25)
+    CmdLabel.Visible = false
+    CmdLabel.Font = Enum.Font.SourceSans
+    CmdLabel.Text = "goto [player]"
+    CmdLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CmdLabel.TextSize = 16.000
+    CmdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    CommandBar.Name = "CommandBar"
+    CommandBar.Parent = Gui
+    CommandBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    CommandBar.BackgroundTransparency = 0.500
+    CommandBar.BorderSizePixel = 0
+    CommandBar.Position = UDim2.new(0.0491453037, 0, 0.889245629, 0)
+    CommandBar.Size = UDim2.new(0.899999976, 0, 0, 50)
+    
+    Arrow.Name = "Arrow"
+    Arrow.Parent = CommandBar
+    Arrow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Arrow.BackgroundTransparency = 1.000
+    Arrow.BorderSizePixel = 0
+    Arrow.Size = UDim2.new(0, 50, 0, 50)
+    Arrow.Font = Enum.Font.SourceSans
+    Arrow.Text = ">"
+    Arrow.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Arrow.TextScaled = true
+    Arrow.TextSize = 14.000
+    Arrow.TextWrapped = true
+    
+    Input.Name = "Input"
+    Input.Parent = CommandBar
+    Input.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Input.BackgroundTransparency = 1.000
+    Input.BorderSizePixel = 0
+    Input.Position = UDim2.new(0, 50, 0, 0)
+    Input.Size = UDim2.new(0.941617727, 0, 0, 50)
+    Input.Font = Enum.Font.SourceSans
+    Input.Text = ""
+    Input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Input.TextSize = 20.000
+    Input.TextXAlignment = Enum.TextXAlignment.Left
+    
+    DropShadow_2.Name = "DropShadow"
+    DropShadow_2.Parent = CommandBar
+    DropShadow_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    DropShadow_2.BackgroundTransparency = 1.000
+    DropShadow_2.Position = UDim2.new(0, -5, 0, -5)
+    DropShadow_2.Size = UDim2.new(1, 10, 1, 10)
+    DropShadow_2.ZIndex = -5
+    DropShadow_2.Image = "rbxassetid://297694300"
+    DropShadow_2.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    DropShadow_2.ImageTransparency = 0.500
+    DropShadow_2.ScaleType = Enum.ScaleType.Slice
+    DropShadow_2.SliceCenter = Rect.new(95, 103, 894, 902)
+    DropShadow_2.SliceScale = 0.050
 
-return Gui]])()
+    return Gui
+]])()
 
 local MainGui = Instance.new("ScreenGui")
-MainGui.Name = "Prisonware"
-local CmdBar = GUI.Commandbar
+MainGui.Name = "Prisonware |"..game:GetService("HttpService"):GenerateGUID(false)
+CmdBar = GUI.CommandBar
+CommandList = GUI.CommandList
+CommandList.Parent = MainGui
 CmdBar.Parent = MainGui
 
 local CmdbarOpen = true
@@ -564,9 +660,9 @@ local function ToggleCmdbar(a, InputState)
         CmdbarOpen = false
     elseif not CmdbarOpen then
         CmdBar:TweenPosition(UDim2.new(0.07, 0, 0.9, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.25)
-        CmdBar:CaptureFocus()
+        CmdBar.Input:CaptureFocus()
         task.wait()
-        CmdBar.Text = ""
+        CmdBar.Input.Text = ""
         CmdbarOpen = true
     end
 end
@@ -645,13 +741,65 @@ task.spawn(function()
     end
 end)
 
-CmdBar.FocusLost:Connect(function()
-    local Text = CmdBar.Text
+CmdBar.Input.FocusLost:Connect(function()
+    local Text = CmdBar.Input.Text
     ToggleCmdbar()
     if Text ~= "" then
         HandleString(Settings.Prefix..Text)
     end
 end)
+
+for _, Cmd in pairs(Commands) do
+    local Label = GUI.CmdLabel:Clone()
+    Label.Visible = true
+    Label.Text = Cmd.Help
+    Label.Parent = CommandList.Commands
+end
+
+function Dragify(Frame)
+    local dragToggle = nil
+    local dragSpeed = .25
+    local dragInput = nil
+    local dragStart = nil
+    local dragPos = nil
+    
+    local function updateInput(input)
+        Delta = input.Position - dragStart
+        Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + Delta.X, startPos.Y.Scale, startPos.Y.Offset + Delta.Y)
+        game:GetService("TweenService"):Create(Frame, TweenInfo.new(.25), {Position = Position}):Play()
+    end
+    
+    Frame.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = Frame.Position
+            input.Changed:Connect(function()
+                if (input.UserInputState == Enum.UserInputState.End) then
+                dragToggle = false
+                end
+            end)
+        end
+    end)
+    
+    Frame.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            dragInput = input
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if (input == dragInput and dragToggle) then
+            updateInput(input)
+        end
+    end)
+end
+    
+Dragify(CommandList)
+CommandList.Close.MouseButton1Down:Connect(function()
+    CommandList.Visible = false
+end)
+
 MainGui.Parent = game:GetService("CoreGui")
 
 Refresh()
