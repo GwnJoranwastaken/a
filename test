@@ -1,0 +1,3 @@
+for _,v in pairs({...}) do
+  print(_,v)
+end
