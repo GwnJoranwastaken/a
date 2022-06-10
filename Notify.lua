@@ -253,7 +253,7 @@ end
 local lib = {}
 
 function lib.prompt(title, description, closeTime)
-    task.spawn(prompt, title, description, closetime, true)
+    task.spawn(prompt, title, description, closeTime, true)
 end
 
 return lib
