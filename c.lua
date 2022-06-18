@@ -678,7 +678,7 @@ AddCommand({
         if Speaker == LocalPlayer then
             CommandList.Visible = not CommandList.Visible
         else
-            Services.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w " .. Speaker.Name .. " cmds, kill, loopkill, unloopkill, aura, virus, bring, prison, yard, base/crimbase, walmart", "All")
+            Services.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w " .. Speaker.Name .. " cmds, kill, loopkill, unloopkill, aura, virus, bring, car, prison, yard, base/crimbase, walmart", "All")
         end
     end
 })
@@ -910,6 +910,28 @@ AddCommand({
     end
 })
 AddCommand({
+    Name = "car",
+    Alias = {},
+    Help = "car",
+    Description = "Spawns a car",
+    Callback = function(Args, Speaker)
+        local Position = GetRoot(Speaker) and GetRoot(Speaker).CFrame + Vector3.new(0, 3, 0) or nil
+        if Position == nil then return end
+        
+        task.spawn(InvokeServer, Services.Workspace.Remote.ItemHandler, Services.Workspace.Prison_ITEMS.buttons:FindFirstChild("Car Spawner"):FindFirstChild("Car Spawner"))
+        local Car = Services.Workspace.CarContainer.ChildAdded:Wait()
+        local Seat = Car:WaitForChild("Body"):WaitForChild("VehicleSeat")
+        task.wait(0.1)
+        Car.PrimaryPart = Seat
+        repeat 
+            task.wait()
+            Car:SetPrimaryPartCFrame(Position)
+            Seat:Sit(GetHumanoid())
+        until Seat.Occupant == GetHumanoid()
+        print("a")
+    end
+})
+AddCommand({
     Name = "bring",
     Alias = {},
     Help = "bring [Player(s)]",
@@ -1027,7 +1049,7 @@ table.insert(Connections, LocalPlayer.Chatted:Connect(function(Message)
 end))
 table.insert(Connections, CommandBar.Input.FocusLost:Connect(function()
     if CommandBar.Input.Text ~= "" then
-        ExecuteCommand(Prefix..CommandBar.Input.Text, LocalPlayer)
+        task.spawn(ExecuteCommand, Prefix..CommandBar.Input.Text, LocalPlayer)
     end
     ToggleCmdbar()
 end))
