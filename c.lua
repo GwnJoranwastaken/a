@@ -409,6 +409,7 @@ local Services = {
     Players = GetService(game, "Players");
     CoreGui = GetService(game, "CoreGui");
     TweenService = GetService(game, "TweenService");
+    RunService = GetService(game, "RunService");
     HttpService = GetService(game, "HttpService");
     ReplicatedStorage = GetService(game, "ReplicatedStorage");
     UserInputService = GetService(game, "UserInputService");
@@ -420,9 +421,12 @@ local States = {
     Godmode = false,
     Fastrespawn = true,
     Autoguns = false,
+    Noclip = false,
 }
 local Ranked = {}
 local LoopKilled = {}
+local AuraPlayers = {}
+local InfectedPlayers = {}
 local Prefix = "?"
 
 local LocalPlayer = Services.Players.LocalPlayer
@@ -649,6 +653,20 @@ local function Teleport(Player, Position)
         LoadPos()
     end
 end
+local function GetPlayersInRange(Position, Range)
+    local Plrs = {}
+    for _, Player in pairs(Services.Players:GetPlayers()) do
+        if not GetCharacter(Player) or Player == LocalPlayer then continue end
+        local Root = GetRoot(Player)
+        local Hum = GetHumanoid(Player)
+        if not Hum or not Root or Hum.Health <= 0 or GetCharacter(Player):FindFirstChildOfClass("ForceField") then continue end
+        local Mag = (Position - Root.Position).Magnitude
+        if Mag <= Range then
+            table.insert(Plrs, Player)
+        end
+    end
+    return Plrs
+end
 
 -- // Add Commands \\ --
 AddCommand({
@@ -660,7 +678,7 @@ AddCommand({
         if Speaker == LocalPlayer then
             CommandList.Visible = not CommandList.Visible
         else
-            Services.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w " .. Speaker.Name .. " cmds, kill, loopkill, unloopkill, bring, prison, yard, base/crimbase, walmart", "All")
+            Services.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w " .. Speaker.Name .. " cmds, kill, loopkill, unloopkill, aura, virus, bring, prison, yard, base/crimbase, walmart", "All")
         end
     end
 })
@@ -747,6 +765,52 @@ AddCommand({
     end
 })
 AddCommand({
+    Name = "fastrespawn",
+    Alias = {},
+    Help = "fastrespawn [off/on]",
+    Description = "Toggle fastrespawn",
+    Callback = function(Args, Speaker)
+        if Speaker ~= LocalPlayer then return end
+        if Args[1] then
+            if Args[1]:lower() == "on" then
+                States.Fastrespawn = true
+            elseif Args[1]:lower() == "off" then
+                States.Fastrespawn = false
+            end
+        else
+            States.Fastrespawn = not States.Fastrespawn
+        end
+        if States.Fastrespawn then
+            Notify("Enabled Fastrespawn", 3)
+        elseif not States.Fastrespawn then
+            Notify("Disabled Fastrespawn", 3)
+        end
+    end
+})
+AddCommand({
+    Name = "noclip",
+    Alias = {},
+    Help = "noclip [off/on]",
+    Description = "Toggle noclip",
+    Callback = function(Args, Speaker)
+        if Speaker ~= LocalPlayer then return end
+        if Args[1] then
+            if Args[1]:lower() == "on" then
+                States.Noclip = true
+            elseif Args[1]:lower() == "off" then
+                States.Noclip = false
+            end
+        else
+            States.Noclip = not States.Noclip
+        end
+        if States.Noclip then
+            Notify("Enabled Noclip", 3)
+        elseif not States.Noclip then
+            Notify("Disabled Noclip", 3)
+        end
+    end
+})
+AddCommand({
     Name = "kill",
     Alias = {},
     Help = "kill [Player(s)]",
@@ -773,7 +837,7 @@ AddCommand({
 AddCommand({
     Name = "unloopkill",
     Alias = {"unlk", "unlkill"},
-    Help = "unloopkill/unlk [player]",
+    Help = "unloopkill/unlk [player(s)]",
     Description = "Unloopkills the player(s)",
     Callback = function(Args, Speaker)
         local Targets = GetPlayers(Args[1], Speaker)
@@ -782,6 +846,64 @@ AddCommand({
             for _, Plr in pairs(LoopKilled) do
                 if Plr == Player.UserId then
                     table.remove(LoopKilled, _)
+                end
+            end
+        end
+    end
+})
+AddCommand({
+    Name = "aura",
+    Alias = {"killaura"},
+    Help = "aura [Player(s)]",
+    Description = "Gives the player(s) aura",
+    Callback = function(Args, Speaker)
+        local Targets = GetPlayers(Args[1], Speaker)
+        for _, Target in pairs(Targets) do
+            table.insert(AuraPlayers, Target.UserId)
+        end
+    end
+})
+AddCommand({
+    Name = "unaura",
+    Alias = {"unkillaura"},
+    Help = "unaura [player(s)]",
+    Description = "Removes the player(s) aura",
+    Callback = function(Args, Speaker)
+        local Targets = GetPlayers(Args[1], Speaker)
+        for _, Player in pairs(Targets) do
+            if not table.find(AuraPlayers, Player.UserId) then continue end
+            for _, Plr in pairs(AuraPlayers) do
+                if Plr == Player.UserId then
+                    table.remove(AuraPlayers, _)
+                end
+            end
+        end
+    end
+})
+AddCommand({
+    Name = "virus",
+    Alias = {"infect"},
+    Help = "virus [Player(s)]",
+    Description = "Gives the player(s) virus",
+    Callback = function(Args, Speaker)
+        local Targets = GetPlayers(Args[1], Speaker)
+        for _, Target in pairs(Targets) do
+            table.insert(InfectedPlayers, Target.UserId)
+        end
+    end
+})
+AddCommand({
+    Name = "unvirus",
+    Alias = {"uninfect"},
+    Help = "unvirus [player(s)]",
+    Description = "Removes the player(s) virus",
+    Callback = function(Args, Speaker)
+        local Targets = GetPlayers(Args[1], Speaker)
+        for _, Player in pairs(Targets) do
+            if not table.find(InfectedPlayers, Player.UserId) then continue end
+            for _, Plr in pairs(InfectedPlayers) do
+                if Plr == Player.UserId then
+                    table.remove(InfectedPlayers, _)
                 end
             end
         end
@@ -799,6 +921,18 @@ AddCommand({
             Teleport(Target, Position)
         end
         Output("Info", "Brought " .. #Targets .. " Players")
+    end
+})
+AddCommand({
+    Name = "to",
+    Alias = {},
+    Help = "to [Player]",
+    Description = "Teleport to the player",
+    Callback = function(Args, Speaker)
+        local Targets = GetPlayers(Args[1], Speaker)
+        for _, Target in pairs(Targets) do
+            GetRoot().CFrame = GetRoot(Target).CFrame
+        end
     end
 })
 AddCommand({
@@ -928,19 +1062,54 @@ for _, Player in pairs(Services.Players:GetPlayers()) do
         end
     end)
 end
+table.insert(Connections, Services.RunService.Stepped:Connect(function()
+    if States.Noclip and GetCharacter() then
+        for _, Part in pairs(GetCharacter():GetChildren()) do
+            if Part:IsA("BasePart") and Part.CanCollide then
+                Part.CanCollide = false
+            end
+        end 
+    end
+end))
 
+--// Loopkill/Aura/Virus \\ --
 task.spawn(function()
     while true do
         pcall(function()
             local KillList = {}
+
+            -- // Loopkill \\ --
             for _, Player in pairs(Services.Players:GetPlayers()) do
                 if Player == LocalPlayer or not Player.Character or Player.Character:FindFirstChildOfClass("ForceField") then continue end
-                local Humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+                local Humanoid = GetHumanoid(Player)
                 if table.find(LoopKilled, Player.UserId) and Humanoid and Humanoid.Health > 0 then
                     table.insert(KillList, Player)
-                    print(Player.Name)
                 end
             end
+
+            -- // Killaura/aura \\ --
+            for _, Player in pairs(Services.Players:GetPlayers()) do
+                if table.find(AuraPlayers, Player.UserId) and GetRoot(Player) then
+                    local Kills = GetPlayersInRange(GetRoot(Player).Position, 20)
+                    for _, Target in pairs(Kills) do
+                        if Target == LocalPlayer or Target == Player then continue end
+                        table.insert(KillList, Target)
+                    end
+                end
+            end
+
+            -- // Virus \\ --
+            for _, Player in pairs(Services.Players:GetPlayers()) do
+                if table.find(InfectedPlayers, Player.UserId) and GetRoot(Player) then
+                    local Kills = GetPlayersInRange(GetRoot(Player).Position, 2.5)
+                    for _, Target in pairs(Kills) do
+                        if Target == LocalPlayer or Target == Player then continue end
+                        table.insert(KillList, Target)
+                    end
+                end
+            end
+
+            -- // Execute kill \\ --
             if #KillList > 0 then
                 Kill(KillList)
             end
@@ -1028,6 +1197,8 @@ for Index, Command in pairs(Commands) do
     CMDFrame.Parent = GUI.CommandList.Commands
     CommandList.Commands.CanvasSize = UDim2.new(0, 0, 0, #CommandList.Commands:GetChildren() * 91)
 end
+
+CommandList.Search.PlaceholderText = "Search commands ["..#Commands.."]"
 
 GUI.Name = Services.HttpService:GenerateGUID(false)
 Dragify(CommandList)
